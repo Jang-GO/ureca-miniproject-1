@@ -1,6 +1,4 @@
-<p align="center">
-  <h1>유레카 미니프로젝트</h1>
-</p>
+<h1 align="center>유레카 미니프로젝트</h1>
 
 ---
 
@@ -15,14 +13,14 @@
 ---
 
 ### 📝 프로젝트 소개
-휴대폰 판매 및 재고 관리 시스템으로, 가맹점 점주가 `휴대폰 재고`와 `판매 내역`을 효율적으로 관리할 수 있도록 돕는 서비스
+가맹점 점주가 `휴대폰 재고`, `판매 내역`, `매출 통계`를 효율적으로 관리할 수 있는 시스템
 
 ### 💻 기술 스택
+[![My Skills](https://skillicons.dev/icons?i=java)](https://skillicons.dev)
+[![My Skills](https://skillicons.dev/icons?i=mysql)](https://skillicons.dev)
 
-### ERD
-
+### 🎨 ERD
+![ERD](img/erd.png)
 ### ⚙️ 프로젝트 기능
 
 ### 📸 실행 화면
-
-### 🛠️ 느낀 점
