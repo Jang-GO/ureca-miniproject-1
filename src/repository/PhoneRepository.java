@@ -3,10 +3,7 @@ package repository;
 import connection.DBConnectionUtil;
 import domain.Phone;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.ZoneId;
 
@@ -22,10 +19,10 @@ public class PhoneRepository {
                 String modelName = rs.getString("model_name");
                 String brand = rs.getString("brand");
                 int price = rs.getInt("price");
-                LocalDate date = rs.getDate("created_at").toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate();
-                return new Phone(brand, date,modelName, phoneId, price);
+                // LocalDate로 변환
+                LocalDate createdAt = rs.getDate("created_at").toLocalDate();
+
+                return new Phone(brand, createdAt,modelName, phoneId, price);
             }
         } catch (SQLException e) {
             e.printStackTrace();

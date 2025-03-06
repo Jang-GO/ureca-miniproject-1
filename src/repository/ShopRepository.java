@@ -18,16 +18,19 @@ public class ShopRepository {
             PreparedStatement pstmt = con.prepareStatement(query)){
             pstmt.setInt(1,ownerId);
             ResultSet rs = pstmt.executeQuery();
+
+            System.out.println(query);
             while (rs.next()) {
                 Shop shop = new Shop();
                 shop.setShopId(rs.getInt("shop_id"));
                 shop.setShopName(rs.getString("name"));
                 shop.setLocation(rs.getString("location"));
                 shop.setOwnerId(rs.getInt("owner_id"));
-                LocalDate localDate = rs.getDate("created_at").toInstant()
-                                .atZone(ZoneId.systemDefault())
-                                        .toLocalDate();
-                shop.setCreatedAt(localDate);
+                // LocalDate로 변환
+                Date createdAt = rs.getDate("created_at");
+                if (createdAt != null) {
+                    shop.setCreatedAt(createdAt.toLocalDate());
+                }
 
                 list.add(shop);
             }
