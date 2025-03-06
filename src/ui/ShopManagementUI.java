@@ -19,7 +19,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDateTime;
-import java.time.Month;
 import java.util.*;
 import java.util.List;
 
@@ -110,6 +109,15 @@ public class ShopManagementUI extends JFrame {
     private void showPhonesOfShop(int shopId) {
         List<ShopPhone> shopPhones = shopPhoneRepository.findPhonesByShopId(shopId);
 
+        // 검색 필드를 추가합니다.
+        JPanel searchPanel = new JPanel();
+        JTextField searchField = new JTextField(15);
+        JButton searchButton = new JButton("검색");
+
+        searchPanel.add(new JLabel("모델명 또는 브랜드:"));
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+
         // 테이블에 표시할 데이터 준비
         String[] columnNames = {"모델", "브랜드", "가격", "재고"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
@@ -122,12 +130,33 @@ public class ShopManagementUI extends JFrame {
             }
         }
 
+
+        // 버튼 이벤트 처리
+        searchButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String searchText = searchField.getText().toLowerCase();
+
+                // 기존 테이블 데이터를 지운 후, 검색 조건에 맞는 휴대폰만 다시 추가
+                tableModel.setRowCount(0);
+                for (ShopPhone shopPhone : shopPhones) {
+                    Phone phone = phoneRepository.findById(shopPhone.getPhoneId());
+                    if (phone != null && (phone.getModelName().toLowerCase().contains(searchText) ||
+                            phone.getBrand().toLowerCase().contains(searchText))) {
+                        Object[] row = {phone.getModelName(), phone.getBrand(), phone.getPrice(), shopPhone.getStock()};
+                        tableModel.addRow(row);
+                    }
+                }
+            }
+        });
+
         // 테이블 생성
         JTable phoneTable = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(phoneTable);
 
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
+        panel.add(searchPanel, BorderLayout.NORTH); // 검색 패널 추가
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // 버튼 추가 (나중에 판매, 수정, 삭제 버튼 추가 예정)
@@ -401,18 +430,43 @@ public class ShopManagementUI extends JFrame {
         chartFrame.setVisible(true);
     }
 
-
-
-
-
-
     private void showSalesHistory(int shopId) {
         // 판매 내역 가져오기
         List<Sale> sales = saleRepository.findSalesByShopId(shopId);
 
+        // 검색 필드를 추가합니다.
+        JPanel searchPanel = new JPanel();
+        JTextField searchField = new JTextField(15);
+        JButton searchButton = new JButton("검색");
+
+        searchPanel.add(new JLabel("고객 이름 또는 모델 명:"));
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+
         // 테이블에 표시할 데이터 준비
         String[] columnNames = {"고객 이름", "모델", "수량", "총 가격", "판매일"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
+
+        // 버튼 이벤트 처리
+        searchButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String searchText = searchField.getText().toLowerCase();
+
+                // 기존 테이블 데이터를 지운 후, 검색 조건에 맞는 판매 내역만 다시 추가
+                tableModel.setRowCount(0);
+                for (Sale sale : sales) {
+                    Customer customer = customerRepository.findById(sale.getCustomerId());
+                    Phone phone = phoneRepository.findById(sale.getPhoneId());
+                    if (customer != null && phone != null &&
+                            (customer.getName().toLowerCase().contains(searchText) ||
+                                    phone.getModelName().toLowerCase().contains(searchText))) {
+                        Object[] row = {customer.getName(), phone.getModelName(), sale.getQuantity(), sale.getTotalPrice(), sale.getSaleDate()};
+                        tableModel.addRow(row);
+                    }
+                }
+            }
+        });
 
         for (Sale sale : sales) {
             // 판매 내역에 포함된 고객 정보와 전화번호를 찾음
@@ -431,13 +485,16 @@ public class ShopManagementUI extends JFrame {
             }
         }
 
+
         // 판매 내역 테이블 생성
         JTable salesTable = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(salesTable);
 
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
+        panel.add(searchPanel, BorderLayout.NORTH); // 검색 패널 추가
         panel.add(scrollPane, BorderLayout.CENTER);
+
 
         // 창 설정
         JFrame salesFrame = new JFrame("판매 내역");
