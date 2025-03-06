@@ -5,9 +5,10 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 import repository.*;
 
@@ -22,8 +23,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.List;
 
+
 public class ShopManagementUI extends JFrame {
-    private final JTextField ownerIdField;
     private final JList<String> shopList;
     private final DefaultListModel<String> listModel;
 
@@ -32,9 +33,13 @@ public class ShopManagementUI extends JFrame {
     private final PhoneRepository phoneRepository;
     private final SaleRepository saleRepository;
     private final CustomerRepository customerRepository;
+    private final OwnerRepository ownerRepository;
+
+    private UUID ownerId; // 점주 UUID 저장
+    private JLabel ownerNameLabel;  // 추가된 JLabel
 
     public ShopManagementUI() {
-        setTitle("가맹점 관리 시스템");
+        setTitle("휴대폰 판매 관리 시스템");
         setSize(600, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -44,43 +49,21 @@ public class ShopManagementUI extends JFrame {
         phoneRepository = new PhoneRepository();
         saleRepository = new SaleRepository();
         customerRepository = new CustomerRepository();
+        ownerRepository = new OwnerRepository();
 
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         getContentPane().add(panel);
-
-        JPanel searchPanel = new JPanel();
-        searchPanel.setLayout(new FlowLayout());
-        ownerIdField = new JTextField(15);
-        JButton searchButton = new JButton("검색");
-
-        searchPanel.add(new JLabel("점주 ID:"));
-        searchPanel.add(ownerIdField);
-        searchPanel.add(searchButton);
-
-        panel.add(searchPanel, BorderLayout.NORTH);
 
         listModel = new DefaultListModel<>();
         shopList = new JList<>(listModel);
         JScrollPane scrollPane = new JScrollPane(shopList);
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        searchButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String ownerIdText = ownerIdField.getText();
-                try {
-                    int ownerId = Integer.parseInt(ownerIdText);
-                    List<Shop> shops = shopRepository.findByOwnerId(ownerId);
-                    listModel.clear();
-                    for (Shop shop : shops) {
-                        listModel.addElement(shop.getShopName() + " (ID: " + shop.getShopId() + ")");
-                    }
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(ShopManagementUI.this, "유효한 점주 ID를 입력해주세요.");
-                }
-            }
-        });
+        // 가맹점 목록 위에 표시될 텍스트 라벨 추가
+        ownerNameLabel = new JLabel(); // 초기에는 이름이 없으므로 빈 JLabel로 설정
+        ownerNameLabel.setHorizontalAlignment(SwingConstants.CENTER); // 가운데 정렬
+        panel.add(ownerNameLabel, BorderLayout.NORTH);
 
         shopList.addMouseListener(new MouseAdapter() {
             @Override
@@ -94,6 +77,45 @@ public class ShopManagementUI extends JFrame {
                 }
             }
         });
+        // UUID 입력 후 가맹점 목록 자동 조회
+        requestOwnerId();
+
+        setVisible(true);
+    }
+
+    private void requestOwnerId() {
+        while (true) {
+            String ownerIdText = JOptionPane.showInputDialog(this, "점주 UUID를 입력하세요:", "로그인", JOptionPane.QUESTION_MESSAGE);
+            if (ownerIdText == null) {
+                System.exit(0); // 사용자가 취소하면 프로그램 종료
+            }
+            try {
+                ownerId = UUID.fromString(ownerIdText); // UUID 유효성 검사
+                Owner owner = ownerRepository.findByUUID(ownerId);
+                if (owner == null) {
+                    JOptionPane.showMessageDialog(this, "등록되지 않은 사용자입니다", "등록되지 않은 사용자", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    ownerNameLabel.setText(owner.getName() + " 님이 운영중인 가맹점 목록"); // 로그인한 점주의 이름과 메시지 표시
+                    searchShops(owner); // 가맹점 목록 자동 검색
+                    break;
+                }
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(this, "유효한 UUID를 입력해주세요.", "오류", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void searchShops(Owner owner) {
+        try{
+            int ownerId = owner.getOwnerId();
+            List<Shop> shops = shopRepository.findByOwnerId(ownerId);
+            listModel.clear();
+            for (Shop shop : shops) {
+                listModel.addElement(shop.getShopName() + " (ID: " + shop.getShopId() + ")");
+            }
+        }catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(ShopManagementUI.this, "에러발생");
+        }
     }
 
     public static void main(String[] args) {
@@ -353,11 +375,15 @@ public class ShopManagementUI extends JFrame {
         // 월별 판매 금액과 판매량 초기화
         int[] monthlySalesAmount = new int[12]; // 각 월의 판매 금액
         int[] monthlyQuantity = new int[12];    // 각 월의 판매량
+        int totalSalesAmount = 0; // 총 판매 금액
+        int totalQuantity = 0;    // 총 판매량
 
         for (Sale sale : sales) {
             int month = sale.getSaleDate().getMonthValue() - 1; // 월은 0부터 시작하므로 1을 빼기
             monthlySalesAmount[month] += sale.getTotalPrice();
             monthlyQuantity[month] += sale.getQuantity();
+            totalSalesAmount += sale.getTotalPrice(); // 총 판매 금액 합산
+            totalQuantity += sale.getQuantity();     // 총 판매량 합산
         }
 
         // JFreeChart의 데이터셋 준비
@@ -373,7 +399,7 @@ public class ShopManagementUI extends JFrame {
         // 판매 금액 차트 생성
         JFreeChart salesChart = ChartFactory.createBarChart(
                 year + " 년 판매 금액", // 차트 제목
-                "월",                 // x축 레이블
+                "",                 // x축 레이블
                 "금액",               // y축 레이블
                 salesAmountDataset,   // 판매 금액 데이터셋
                 PlotOrientation.VERTICAL, // 그래프 방향
@@ -382,10 +408,15 @@ public class ShopManagementUI extends JFrame {
                 false                 // URL 링크 표시
         );
 
+        CategoryPlot salesPlot = salesChart.getCategoryPlot();
+        BarRenderer salesRenderer = (BarRenderer) salesPlot.getRenderer();
+        salesRenderer.setDefaultItemLabelsVisible(true); // 항목 레이블 표시
+        salesRenderer.setDefaultItemLabelGenerator(new StandardCategoryItemLabelGenerator()); // 레이블 생성기 설정
+
         // 판매량 차트 생성
         JFreeChart quantityChart = ChartFactory.createBarChart(
                 year + " 년 판매량", // 차트 제목
-                "월",              // x축 레이블
+                "",              // x축 레이블
                 "판매량",          // y축 레이블
                 quantityDataset,   // 판매량 데이터셋
                 PlotOrientation.VERTICAL, // 그래프 방향
@@ -393,6 +424,11 @@ public class ShopManagementUI extends JFrame {
                 true,              // 툴팁 표시
                 false              // URL 링크 표시
         );
+        // 판매량 차트의 렌더러 설정
+        CategoryPlot quantityPlot1 = quantityChart.getCategoryPlot();
+        BarRenderer quantityRenderer = (BarRenderer) quantityPlot1.getRenderer();
+        quantityRenderer.setDefaultItemLabelsVisible(true); // 항목 레이블 표시
+        quantityRenderer.setDefaultItemLabelGenerator(new StandardCategoryItemLabelGenerator()); // 레이블 생성기 설정
 
         // 판매 금액 차트에 한글 폰트 설정
         Font font = new Font("맑은 고딕", Font.PLAIN, 12);
@@ -410,23 +446,55 @@ public class ShopManagementUI extends JFrame {
         quantityChart.getCategoryPlot().getDomainAxis().setTickLabelFont(font);
         quantityChart.getCategoryPlot().getRangeAxis().setTickLabelFont(font);
         quantityChart.getLegend().setItemFont(font);  // 판매량 차트 legend 폰트
+
         // 판매량 그래프의 y축을 정수로 설정
         CategoryPlot quantityPlot = quantityChart.getCategoryPlot();
         NumberAxis quantityAxis = (NumberAxis) quantityPlot.getRangeAxis();
         quantityAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits()); // 정수로 설정
 
+        // 총 판매량과 총 판매 금액 레이블 생성
+        JLabel totalSalesLabel = new JLabel("총 판매 금액: " + totalSalesAmount + " 원");
+        JLabel totalQuantityLabel = new JLabel("총 판매량: " + totalQuantity + " 개");
+
         // 차트 패널 생성 및 추가
         ChartPanel salesChartPanel = new ChartPanel(salesChart);
         ChartPanel quantityChartPanel = new ChartPanel(quantityChart);
 
-        // 차트 패널을 새 창에 표시
+//        // 차트 패널을 새 창에 표시
+//        JFrame chartFrame = new JFrame(year + " 년 판매 통계");
+//        chartFrame.setLayout(new GridLayout(3, 1));
+//        chartFrame.setSize(600, 740);
+//        chartFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+//        chartFrame.setLocationRelativeTo(null);
+//        chartFrame.getContentPane().add(salesChartPanel, BorderLayout.NORTH);
+//        chartFrame.getContentPane().add(quantityChartPanel, BorderLayout.CENTER);
+//        chartFrame.setVisible(true);
+
+        // 총 판매량, 총 판매 금액 레이블을 아래에 추가
+        JPanel totalPanel = new JPanel();
+        totalPanel.setLayout(new BoxLayout(totalPanel, BoxLayout.Y_AXIS));
+        totalPanel.add(totalSalesLabel);
+        totalPanel.add(totalQuantityLabel);
+        // totalPanel의 크기 제한
+        totalPanel.setPreferredSize(new Dimension(600, 40)); // 가로 600, 세로 50으로 설정
+
+//        chartFrame.getContentPane().add(totalPanel, BorderLayout.SOUTH);
+
+        // 차트 패널 크기 조정 (차트 영역을 더 크게 할 수 있도록)
+        salesChartPanel.setPreferredSize(new Dimension(600, 350));  // 판매 금액 차트 크기
+        quantityChartPanel.setPreferredSize(new Dimension(600, 350));  // 판매량 차트 크기
+
         JFrame chartFrame = new JFrame(year + " 년 판매 통계");
-        chartFrame.setLayout(new GridLayout(2, 1));
+        chartFrame.setLayout(new BorderLayout());
         chartFrame.setSize(600, 800);
         chartFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         chartFrame.setLocationRelativeTo(null);
+
+// 차트 패널과 레이블 패널 추가
         chartFrame.getContentPane().add(salesChartPanel, BorderLayout.NORTH);
-        chartFrame.getContentPane().add(quantityChartPanel, BorderLayout.SOUTH);
+        chartFrame.getContentPane().add(quantityChartPanel, BorderLayout.CENTER);
+        chartFrame.getContentPane().add(totalPanel, BorderLayout.SOUTH); // 레이블은 아래에 추가
+
         chartFrame.setVisible(true);
     }
 

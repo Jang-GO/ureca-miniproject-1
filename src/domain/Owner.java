@@ -1,11 +1,33 @@
 package domain;
 
+import java.util.UUID;
+
 public class Owner {
     private int ownerId;
     private String name;
     private String phone_number;
 
+    @Override
+    public String toString() {
+        return "Owner{" +
+                "name='" + name + '\'' +
+                ", ownerId=" + ownerId +
+                ", phone_number='" + phone_number + '\'' +
+                ", uuid=" + uuid +
+                '}';
+    }
+
+    private UUID uuid;
+
     public Owner() {
+    }
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     public Owner(String name, int ownerId, String phone_number) {
