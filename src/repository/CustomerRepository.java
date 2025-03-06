@@ -28,6 +28,33 @@ public class CustomerRepository {
         }
     }
 
+    public Customer findById(int customerId) {
+        String sql = "SELECT * FROM customer WHERE customer_id = ? ;";
+        Customer customer = null;
+
+        try (Connection connection = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+            stmt.setInt(1, customerId);
+
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                // 고객 데이터가 존재하면 Customer 객체로 반환
+                customer = new Customer();
+                customer.setCustomerId(rs.getInt("customer_id"));
+                customer.setName(rs.getString("name"));
+                customer.setPhoneNumber(rs.getString("phone_number"));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("고객 조회 실패", e);
+        }
+
+        return customer;
+    }
+
     public Customer findCustomerByNameAndPhone(String customerName, String customerPhone) {
         String sql = "SELECT * FROM customer WHERE name = ? AND phone_number = ?";
         Customer customer = null;

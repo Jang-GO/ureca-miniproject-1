@@ -117,9 +117,11 @@ public class ShopManagementUI extends JFrame {
         JButton addButton = new JButton("판매");
         JButton editButton = new JButton("수정");
         JButton deleteButton = new JButton("삭제");
+        JButton viewSalesButton = new JButton("판매 내역 보기");
         buttonPanel.add(addButton);
         buttonPanel.add(editButton);
         buttonPanel.add(deleteButton);
+        buttonPanel.add(viewSalesButton);
 
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
@@ -130,6 +132,16 @@ public class ShopManagementUI extends JFrame {
         phoneFrame.setLocationRelativeTo(null);
         phoneFrame.getContentPane().add(panel);
         phoneFrame.setVisible(true);
+
+
+        // 버튼 이벤트 처리
+        viewSalesButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 판매 내역 보기 기능 호출
+                showSalesHistory(shopId); // shopId는 선택된 가맹점 ID
+            }
+        });
 
         addButton.addActionListener(new ActionListener() {
             @Override
@@ -202,6 +214,48 @@ public class ShopManagementUI extends JFrame {
                 }
             }
         });
+    }
+
+    private void showSalesHistory(int shopId) {
+        // 판매 내역 가져오기
+        List<Sale> sales = saleRepository.findSalesByShopId(shopId);
+
+        // 테이블에 표시할 데이터 준비
+        String[] columnNames = {"고객 이름", "모델", "수량", "총 가격", "판매일"};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
+
+        for (Sale sale : sales) {
+            // 판매 내역에 포함된 고객 정보와 전화번호를 찾음
+            Customer customer = customerRepository.findById(sale.getCustomerId());
+            Phone phone = phoneRepository.findById(sale.getPhoneId());
+
+            if (customer != null && phone != null) {
+                Object[] row = {
+                        customer.getName(),
+                        phone.getModelName(),
+                        sale.getQuantity(),
+                        sale.getTotalPrice(),
+                        sale.getSaleDate().toString()
+                };
+                tableModel.addRow(row);
+            }
+        }
+
+        // 판매 내역 테이블 생성
+        JTable salesTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(salesTable);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout());
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        // 창 설정
+        JFrame salesFrame = new JFrame("판매 내역");
+        salesFrame.setSize(600, 400);
+        salesFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        salesFrame.setLocationRelativeTo(null);
+        salesFrame.getContentPane().add(panel);
+        salesFrame.setVisible(true);
     }
 
     public static void main(String[] args) {

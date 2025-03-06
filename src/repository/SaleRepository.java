@@ -3,10 +3,9 @@ package repository;
 import connection.DBConnectionUtil;
 import domain.Sale;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SaleRepository {
     public boolean saveSale(Sale sale) {
@@ -29,5 +28,34 @@ public class SaleRepository {
             e.printStackTrace();
             return false;
         }
+    }
+
+    // 특정 가맹점의 판매 내역을 조회하는 메서드
+    public List<Sale> findSalesByShopId(int shopId) {
+        List<Sale> sales = new ArrayList<>();
+        String sql = "SELECT * FROM sale WHERE shop_id = ?";
+
+        try (Connection connection = DBConnectionUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setInt(1, shopId);
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                Sale sale = new Sale();
+                sale.setSale_id(resultSet.getInt("sale_id"));
+                sale.setQuantity(resultSet.getInt("quantity"));
+                sale.setTotalPrice(resultSet.getInt("total_price"));
+                sale.setSaleDate(resultSet.getTimestamp("sale_date").toLocalDateTime());
+                sale.setCustomerId(resultSet.getInt("customer_id"));
+                sale.setShopId(resultSet.getInt("shop_id"));
+                sale.setPhoneId(resultSet.getInt("phone_id"));
+                sales.add(sale);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return sales;
     }
 }
