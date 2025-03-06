@@ -3,23 +3,22 @@ package domain;
 public class Customer {
     private int CustomerId;
     private String name;
-    private String address;
+    private String phoneNumber;
 
     public Customer() {
     }
 
-    public Customer(String address, int customerId, String name) {
-        this.address = address;
-        CustomerId = customerId;
+    public Customer(String phoneNumber, String name) {
+        this.phoneNumber = phoneNumber;
         this.name = name;
     }
 
-    public String getAddress() {
-        return address;
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public int getCustomerId() {

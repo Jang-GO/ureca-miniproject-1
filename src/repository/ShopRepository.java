@@ -1,6 +1,7 @@
 package repository;
 
 import connection.DBConnectionUtil;
+import domain.Customer;
 import domain.Shop;
 
 import java.sql.*;
@@ -19,7 +20,6 @@ public class ShopRepository {
             pstmt.setInt(1,ownerId);
             ResultSet rs = pstmt.executeQuery();
 
-            System.out.println(query);
             while (rs.next()) {
                 Shop shop = new Shop();
                 shop.setShopId(rs.getInt("shop_id"));

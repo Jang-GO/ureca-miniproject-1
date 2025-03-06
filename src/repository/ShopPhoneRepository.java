@@ -35,4 +35,27 @@ public class ShopPhoneRepository {
 
         return list;
     }
+
+    public void decreaseStock(int shopId, int phoneId, int quantity) {
+        String query = "UPDATE shop_phone SET stock = stock - ? WHERE shop_id = ? AND phone_id = ? AND stock >= ?";
+
+        try (Connection con = DBConnectionUtil.getConnection();
+             PreparedStatement pstmt = con.prepareStatement(query)) {
+
+            pstmt.setInt(1, quantity);
+            pstmt.setInt(2, shopId);
+            pstmt.setInt(3, phoneId);
+            pstmt.setInt(4, quantity);
+
+            int rowsAffected = pstmt.executeUpdate();
+
+            if (rowsAffected == 0) {
+                throw new SQLException("재고를 감소시킬 수 없습니다. 해당 가맹점과 휴대폰이 일치하지 않습니다.");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("재고 감소 실패", e);
+        }
+    }
 }

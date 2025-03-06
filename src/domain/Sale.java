@@ -15,11 +15,10 @@ public class Sale {
     public Sale() {
     }
 
-    public Sale(int customerId, int phoneId, int quantity, int sale_id, LocalDateTime saleDate, int shopId, int totalPrice) {
+    public Sale(int customerId, int phoneId, int quantity, LocalDateTime saleDate, int shopId, int totalPrice) {
         this.customerId = customerId;
         PhoneId = phoneId;
         this.quantity = quantity;
-        this.sale_id = sale_id;
         this.saleDate = saleDate;
         ShopId = shopId;
         this.totalPrice = totalPrice;
