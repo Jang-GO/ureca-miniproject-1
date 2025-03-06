@@ -1,29 +1,38 @@
 package ui;
 
 import domain.*;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.DefaultCategoryDataset;
 import repository.*;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDateTime;
+import java.time.Month;
+import java.util.*;
 import java.util.List;
-import javax.swing.table.DefaultTableModel;
 
 public class ShopManagementUI extends JFrame {
-    private JTextField ownerIdField;
-    private JButton searchButton;
-    private JList<String> shopList;
-    private DefaultListModel<String> listModel;
+    private final JTextField ownerIdField;
+    private final JList<String> shopList;
+    private final DefaultListModel<String> listModel;
 
-    private ShopRepository shopRepository;
-    private ShopPhoneRepository shopPhoneRepository;
-    private PhoneRepository phoneRepository;
-    private SaleRepository saleRepository;
-    private CustomerRepository customerRepository;
+    private final ShopRepository shopRepository;
+    private final ShopPhoneRepository shopPhoneRepository;
+    private final PhoneRepository phoneRepository;
+    private final SaleRepository saleRepository;
+    private final CustomerRepository customerRepository;
 
     public ShopManagementUI() {
         setTitle("가맹점 관리 시스템");
@@ -44,7 +53,7 @@ public class ShopManagementUI extends JFrame {
         JPanel searchPanel = new JPanel();
         searchPanel.setLayout(new FlowLayout());
         ownerIdField = new JTextField(15);
-        searchButton = new JButton("검색");
+        JButton searchButton = new JButton("검색");
 
         searchPanel.add(new JLabel("점주 ID:"));
         searchPanel.add(ownerIdField);
@@ -88,18 +97,27 @@ public class ShopManagementUI extends JFrame {
         });
     }
 
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                new ShopManagementUI().setVisible(true);
+            }
+        });
+    }
+
     // 선택된 가맹점에서 판매 중인 휴대폰을 보여주는 화면
     private void showPhonesOfShop(int shopId) {
         List<ShopPhone> shopPhones = shopPhoneRepository.findPhonesByShopId(shopId);
 
         // 테이블에 표시할 데이터 준비
-        String[] columnNames = {"모델","브랜드", "가격", "재고"};
+        String[] columnNames = {"모델", "브랜드", "가격", "재고"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
 
         for (ShopPhone shopPhone : shopPhones) {
             Phone phone = phoneRepository.findById(shopPhone.getPhoneId());
             if (phone != null) {
-                Object[] row = {phone.getModelName(),phone.getBrand(), phone.getPrice(), shopPhone.getStock()};
+                Object[] row = {phone.getModelName(), phone.getBrand(), phone.getPrice(), shopPhone.getStock()};
                 tableModel.addRow(row);
             }
         }
@@ -115,12 +133,13 @@ public class ShopManagementUI extends JFrame {
         // 버튼 추가 (나중에 판매, 수정, 삭제 버튼 추가 예정)
         JPanel buttonPanel = new JPanel();
         JButton addButton = new JButton("판매");
-        JButton editButton = new JButton("수정");
-        JButton deleteButton = new JButton("삭제");
+        JButton editButton = new JButton("재고 수정");
+        JButton viewStatisticsButton = new JButton("판매 통계 보기");
         JButton viewSalesButton = new JButton("판매 내역 보기");
+
         buttonPanel.add(addButton);
         buttonPanel.add(editButton);
-        buttonPanel.add(deleteButton);
+        buttonPanel.add(viewStatisticsButton);
         buttonPanel.add(viewSalesButton);
 
         panel.add(buttonPanel, BorderLayout.SOUTH);
@@ -142,7 +161,39 @@ public class ShopManagementUI extends JFrame {
                 showSalesHistory(shopId); // shopId는 선택된 가맹점 ID
             }
         });
+        editButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = phoneTable.getSelectedRow();
+                if (selectedRow == -1) {
+                    JOptionPane.showMessageDialog(phoneFrame, "수정할 휴대폰을 선택하세요.");
+                    return;
+                }
 
+                // 선택된 행에서 휴대폰 정보 가져오기
+                String modelName = tableModel.getValueAt(selectedRow, 0).toString();
+                int phoneId = phoneRepository.findByModelName(modelName).getPhoneId(); // phoneId 가져오기
+                int stock = Integer.parseInt(tableModel.getValueAt(selectedRow, 3).toString());
+
+                // 수정할 재고 입력 받기
+                String newStockStr = JOptionPane.showInputDialog(phoneFrame, "수정할 재고를 입력하세요:", stock);
+
+                if (newStockStr == null) return;
+
+                try {
+                    int newStock = Integer.parseInt(newStockStr);
+
+                    // 재고 업데이트
+                    shopPhoneRepository.updateStock(shopId, phoneId, newStock);  // phoneId를 사용하여 재고만 업데이트
+                    tableModel.setValueAt(newStock, selectedRow, 3); // 테이블에서 재고 업데이트
+
+                    JOptionPane.showMessageDialog(phoneFrame, "수정 완료");
+
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(phoneFrame, "올바른 숫자를 입력하세요.");
+                }
+            }
+        });
         addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -214,7 +265,146 @@ public class ShopManagementUI extends JFrame {
                 }
             }
         });
+        // 판매 통계 보기 버튼 클릭 이벤트 처리
+        viewStatisticsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 판매 통계 보기 기능 호출
+                showYearlySalesStatistics(shopId); // shopId는 선택된 가맹점 ID
+            }
+        });
     }
+
+    // 선택된 가맹점에서 판매 통계 버튼 클릭 시 호출되는 메서드
+    private void showYearlySalesStatistics(int shopId) {
+        List<Sale> sales = saleRepository.findSalesByShopId(shopId);
+
+        // 판매된 연도의 목록을 추출
+        Set<Integer> yearsWithSales = new HashSet<>();
+        for (Sale sale : sales) {
+            int year = sale.getSaleDate().getYear();
+            yearsWithSales.add(year);
+        }
+
+        // 연도별로 토글 버튼 생성
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
+
+        for (Integer year : yearsWithSales) {
+            JButton yearButton = new JButton(year + "년 매출 통계");
+            yearButton.addActionListener(e -> showYearSalesChart(shopId, year));
+            buttonPanel.add(yearButton);
+        }
+
+        JScrollPane scrollPane = new JScrollPane(buttonPanel);
+        scrollPane.setPreferredSize(new Dimension(200, 400));
+
+        // 차트 패널
+        JPanel chartPanel = new JPanel();
+        chartPanel.setPreferredSize(new Dimension(600, 400));
+
+        // 메인 레이아웃
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scrollPane, chartPanel);
+        splitPane.setDividerLocation(200);
+
+        // 전체 프레임 설정
+        JFrame statisticsFrame = new JFrame("판매 통계");
+        statisticsFrame.setLayout(new BorderLayout());
+        statisticsFrame.add(splitPane, BorderLayout.CENTER);
+        statisticsFrame.setSize(900, 600);
+        statisticsFrame.setLocationRelativeTo(null); // 화면 중앙에 배치
+        statisticsFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        statisticsFrame.setVisible(true);
+    }
+
+    // 선택된 연도에 대한 매출 통계 차트를 월별로 보여주는 메서드
+    private void showYearSalesChart(int shopId, int year) {
+        List<Sale> sales = saleRepository.findSalesByShopIdAndYear(shopId, year);
+
+        // 월별 판매 금액과 판매량 초기화
+        int[] monthlySalesAmount = new int[12]; // 각 월의 판매 금액
+        int[] monthlyQuantity = new int[12];    // 각 월의 판매량
+
+        for (Sale sale : sales) {
+            int month = sale.getSaleDate().getMonthValue() - 1; // 월은 0부터 시작하므로 1을 빼기
+            monthlySalesAmount[month] += sale.getTotalPrice();
+            monthlyQuantity[month] += sale.getQuantity();
+        }
+
+        // JFreeChart의 데이터셋 준비
+        DefaultCategoryDataset salesAmountDataset = new DefaultCategoryDataset();  // 판매 금액용 데이터셋
+        DefaultCategoryDataset quantityDataset = new DefaultCategoryDataset();    // 판매량용 데이터셋
+
+        // 각 월에 대한 판매 금액과 판매량 데이터 추가
+        for (int month = 0; month < 12; month++) {
+            salesAmountDataset.addValue(monthlySalesAmount[month], "판매 금액", (month + 1) + "월");
+            quantityDataset.addValue(monthlyQuantity[month], "판매량", (month + 1) + "월");
+        }
+
+        // 판매 금액 차트 생성
+        JFreeChart salesChart = ChartFactory.createBarChart(
+                year + " 년 판매 금액", // 차트 제목
+                "월",                 // x축 레이블
+                "금액",               // y축 레이블
+                salesAmountDataset,   // 판매 금액 데이터셋
+                PlotOrientation.VERTICAL, // 그래프 방향
+                true,                 // 범례 표시
+                true,                 // 툴팁 표시
+                false                 // URL 링크 표시
+        );
+
+        // 판매량 차트 생성
+        JFreeChart quantityChart = ChartFactory.createBarChart(
+                year + " 년 판매량", // 차트 제목
+                "월",              // x축 레이블
+                "판매량",          // y축 레이블
+                quantityDataset,   // 판매량 데이터셋
+                PlotOrientation.VERTICAL, // 그래프 방향
+                true,              // 범례 표시
+                true,              // 툴팁 표시
+                false              // URL 링크 표시
+        );
+
+        // 판매 금액 차트에 한글 폰트 설정
+        Font font = new Font("맑은 고딕", Font.PLAIN, 12);
+        salesChart.getTitle().setFont(font);
+        salesChart.getCategoryPlot().getDomainAxis().setLabelFont(font);
+        salesChart.getCategoryPlot().getRangeAxis().setLabelFont(font);
+        salesChart.getCategoryPlot().getDomainAxis().setTickLabelFont(font);
+        salesChart.getCategoryPlot().getRangeAxis().setTickLabelFont(font);
+        salesChart.getLegend().setItemFont(font);
+
+        // 판매량 차트에 한글 폰트 설정
+        quantityChart.getTitle().setFont(font);
+        quantityChart.getCategoryPlot().getDomainAxis().setLabelFont(font);
+        quantityChart.getCategoryPlot().getRangeAxis().setLabelFont(font);
+        quantityChart.getCategoryPlot().getDomainAxis().setTickLabelFont(font);
+        quantityChart.getCategoryPlot().getRangeAxis().setTickLabelFont(font);
+        quantityChart.getLegend().setItemFont(font);  // 판매량 차트 legend 폰트
+        // 판매량 그래프의 y축을 정수로 설정
+        CategoryPlot quantityPlot = quantityChart.getCategoryPlot();
+        NumberAxis quantityAxis = (NumberAxis) quantityPlot.getRangeAxis();
+        quantityAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits()); // 정수로 설정
+
+        // 차트 패널 생성 및 추가
+        ChartPanel salesChartPanel = new ChartPanel(salesChart);
+        ChartPanel quantityChartPanel = new ChartPanel(quantityChart);
+
+        // 차트 패널을 새 창에 표시
+        JFrame chartFrame = new JFrame(year + " 년 판매 통계");
+        chartFrame.setLayout(new GridLayout(2, 1));
+        chartFrame.setSize(600, 800);
+        chartFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        chartFrame.setLocationRelativeTo(null);
+        chartFrame.getContentPane().add(salesChartPanel, BorderLayout.NORTH);
+        chartFrame.getContentPane().add(quantityChartPanel, BorderLayout.SOUTH);
+        chartFrame.setVisible(true);
+    }
+
+
+
+
+
 
     private void showSalesHistory(int shopId) {
         // 판매 내역 가져오기
@@ -256,14 +446,5 @@ public class ShopManagementUI extends JFrame {
         salesFrame.setLocationRelativeTo(null);
         salesFrame.getContentPane().add(panel);
         salesFrame.setVisible(true);
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new ShopManagementUI().setVisible(true);
-            }
-        });
     }
 }

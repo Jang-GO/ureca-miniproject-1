@@ -58,4 +58,32 @@ public class SaleRepository {
 
         return sales;
     }
+
+    public List<Sale> findSalesByShopIdAndYear(int shopId, int year) {
+        List<Sale> sales = new ArrayList<>();
+        String sql = "SELECT * FROM sale WHERE shop_id = ? AND YEAR(sale_date) = ?";
+
+        try (Connection con = DBConnectionUtil.getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+
+            pstmt.setInt(1, shopId);
+            pstmt.setInt(2, year);
+
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                Sale sale = new Sale();
+                sale.setSale_id(rs.getInt("sale_id"));
+                sale.setShopId(rs.getInt("shop_id"));
+                sale.setQuantity(rs.getInt("quantity"));
+                sale.setTotalPrice(rs.getInt("total_price"));
+                sale.setSaleDate(rs.getTimestamp("sale_date").toLocalDateTime());
+                sales.add(sale);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sales;
+    }
+
 }

@@ -58,4 +58,36 @@ public class ShopPhoneRepository {
             throw new RuntimeException("재고 감소 실패", e);
         }
     }
+
+    public void updateStock(int shopId, int phoneId, int newStock) {
+        // ShopPhone 엔티티를 찾아서 재고를 업데이트하는 로직
+        // 예시:
+        String query = "UPDATE shop_phone SET stock = ? WHERE shop_id = ? AND phone_id = ?";
+
+        try (Connection connection = DBConnectionUtil.getConnection()) {
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setInt(1, newStock);
+            stmt.setInt(2, shopId);
+            stmt.setInt(3, phoneId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("재고 업데이트 실패");
+        }
+    }
+
+    // ShopPhoneRepository 클래스 내에 추가된 메서드
+    public void deletePhoneFromShop(int shopId, int phoneId) {
+        String query = "DELETE FROM shop_phone WHERE shop_id = ? AND phone_id = ?";
+
+        try (Connection connection = DBConnectionUtil.getConnection()) {
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setInt(1, shopId);
+            stmt.setInt(2, phoneId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("가맹점에서 휴대폰 삭제 실패");
+        }
+    }
 }
