@@ -1,9 +1,8 @@
 package repository;
 
 import connection.DBConnectionUtil;
-import domain.Phone;
 import domain.ShopPhone;
-import domain.ShopPhoneDTO;
+import domain.dto.ShopPhoneDTO;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -83,7 +82,7 @@ public class ShopPhoneRepository {
 
         String sql = "SELECT p.model_name, p.brand, p.price, sp.stock " +
                 "FROM shop_phone sp " +
-                "JOIN phone p ON sp.phone_id = p.id " +
+                "JOIN phone p ON sp.phone_id = p.phone_id " +
                 "WHERE sp.shop_id = ? " +
                 "AND (LOWER(p.model_name) LIKE LOWER(?) OR LOWER(p.brand) LIKE LOWER(?))";
 

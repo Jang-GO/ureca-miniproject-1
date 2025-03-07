@@ -1,6 +1,8 @@
 package ui;
 
 import domain.*;
+import domain.dto.SaleDTO;
+import domain.dto.ShopPhoneDTO;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -142,20 +144,8 @@ public class ShopManagementUI extends JFrame {
         }
 
 
-        // 버튼 이벤트 처리
-        searchButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String searchText = searchField.getText().toLowerCase();
-
-                List<ShopPhoneDTO> filtered = shopPhoneRepository.findByShopIdAndSearchText(shopId, searchText);
-                tableModel.setRowCount(0);
-                for (ShopPhoneDTO shopPhone : filtered) {
-                    Object[] row = {shopPhone.getModelName(), shopPhone.getBrand(), shopPhone.getPrice(), shopPhone.getStock()};
-                    tableModel.addRow(row);
-                }
-            }
-        });
+        // 검색 버튼 이벤트 처리
+        searchButton.addActionListener(e -> searchPhoneOfShop(shopId, searchField, tableModel));
 
         // 테이블 생성
         JTable phoneTable = new JTable(tableModel);
@@ -168,12 +158,12 @@ public class ShopManagementUI extends JFrame {
 
         // 버튼 추가 (나중에 판매, 수정, 삭제 버튼 추가 예정)
         JPanel buttonPanel = new JPanel();
-        JButton addButton = new JButton("판매");
+        JButton sellButton = new JButton("판매");
         JButton editButton = new JButton("재고 수정");
         JButton viewStatisticsButton = new JButton("판매 통계 보기");
         JButton viewSalesButton = new JButton("판매 내역 보기");
 
-        buttonPanel.add(addButton);
+        buttonPanel.add(sellButton);
         buttonPanel.add(editButton);
         buttonPanel.add(viewStatisticsButton);
         buttonPanel.add(viewSalesButton);
@@ -189,121 +179,136 @@ public class ShopManagementUI extends JFrame {
         phoneFrame.setVisible(true);
 
 
-        // 버튼 이벤트 처리
+        // 판매 통계 버튼 이벤트 처리
         viewSalesButton.addActionListener(e -> showSalesHistory(shopId));
-
-        editButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int selectedRow = phoneTable.getSelectedRow();
-                if (selectedRow == -1) {
-                    JOptionPane.showMessageDialog(phoneFrame, "수정할 휴대폰을 선택하세요.");
-                    return;
-                }
-
-                // 선택된 행에서 휴대폰 정보 가져오기
-                String modelName = tableModel.getValueAt(selectedRow, 0).toString();
-                int phoneId = phoneRepository.findByModelName(modelName).getPhoneId(); // phoneId 가져오기
-                int stock = Integer.parseInt(tableModel.getValueAt(selectedRow, 3).toString());
-
-                // 수정할 재고 입력 받기
-                String newStockStr = JOptionPane.showInputDialog(phoneFrame, "수정할 재고를 입력하세요:", stock);
-
-                if (newStockStr == null) return;
-
-                try {
-                    int newStock = Integer.parseInt(newStockStr);
-
-                    // 재고 업데이트
-                    shopPhoneRepository.updateStock(shopId, phoneId, newStock);  // phoneId를 사용하여 재고만 업데이트
-                    tableModel.setValueAt(newStock, selectedRow, 3); // 테이블에서 재고 업데이트
-
-                    JOptionPane.showMessageDialog(phoneFrame, "수정 완료");
-
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(phoneFrame, "올바른 숫자를 입력하세요.");
-                }
-            }
-        });
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int selectedRow = phoneTable.getSelectedRow();
-                if (selectedRow == -1) {
-                    JOptionPane.showMessageDialog(phoneFrame, "판매할 휴대폰을 선택하세요.");
-                    return;
-                }
-
-                // 선택된 행에서 휴대폰 정보 가져오기
-                String modelName = tableModel.getValueAt(selectedRow, 0).toString();
-                int price = Integer.parseInt(tableModel.getValueAt(selectedRow, 2).toString());
-                int stock = Integer.parseInt(tableModel.getValueAt(selectedRow, 3).toString());
-
-                // 판매 수량 입력
-                String quantityStr = JOptionPane.showInputDialog(phoneFrame, "판매할 수량을 입력하세요:");
-                if (quantityStr == null || quantityStr.trim().isEmpty()) return;
-
-                try {
-                    int quantity = Integer.parseInt(quantityStr);
-                    if (quantity <= 0 || quantity > stock) {
-                        JOptionPane.showMessageDialog(phoneFrame, "유효한 수량을 입력하세요. (남은 재고: " + stock + ")");
-                        return;
-                    }
-
-                    // 고객 ID 입력 받기
-                    // 고객 정보 입력 받기
-                    String customerName = JOptionPane.showInputDialog(phoneFrame, "고객 이름을 입력하세요:");
-                    if (customerName == null || customerName.trim().isEmpty()) return;
-
-                    String customerPhone = JOptionPane.showInputDialog(phoneFrame, "고객 전화번호를 입력하세요:");
-                    if (customerPhone == null || customerPhone.trim().isEmpty()) return;
-
-                    Customer existingCustomer = customerRepository.findCustomerByNameAndPhone(customerName, customerPhone);
-                    if (existingCustomer == null) {
-                        // 새로운 고객 생성
-                        existingCustomer = new Customer(customerPhone, customerName);
-                        customerRepository.save(existingCustomer);
-
-                        customerRepository.findCustomerByNameAndPhone(customerName, customerPhone);
-                        // 고객 저장 후, 다시 고객을 조회하여 저장되었는지 확인
-                        existingCustomer = customerRepository.findCustomerByNameAndPhone(customerName, customerPhone);
-                        if (existingCustomer == null) {
-                            JOptionPane.showMessageDialog(phoneFrame, "고객 정보 저장 실패");
-                            return;
-                        }
-                    }
-                    Phone phone = phoneRepository.findByModelName(modelName);
-                    if (phone == null) {
-                        JOptionPane.showMessageDialog(phoneFrame, "휴대폰 정보를 찾을 수 없습니다.");
-                        return;
-                    }
-
-                    LocalDateTime saleDate = LocalDateTime.now();
-                    // 총 가격 계산
-                    int totalPrice = price * quantity;
-
-                    // 판매 기록 저장
-                    Sale sale = new Sale(existingCustomer.getCustomerId(), phone.getPhoneId(), quantity, saleDate, shopId, totalPrice);
-                    saleRepository.saveSale(sale);
-                    shopPhoneRepository.decreaseStock(shopId, phone.getPhoneId(), quantity);
-                    JOptionPane.showMessageDialog(phoneFrame, "판매 완료");
-
-                    // UI 갱신 (재고 감소 반영)
-                    tableModel.setValueAt(stock - quantity, selectedRow, 3);
-
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(phoneFrame, "올바른 숫자를 입력하세요.");
-                }
-            }
-        });
+        // 수정 버튼 이벤트 처리
+        editButton.addActionListener(e -> editPhoneStock(shopId, phoneTable, phoneFrame, tableModel));
+        // 판매 버튼 이벤트 처리
+        sellButton.addActionListener( e -> sellPhoneToCustomer(shopId, phoneTable, phoneFrame, tableModel));
         // 판매 통계 보기 버튼 클릭 이벤트 처리
-        viewStatisticsButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // 판매 통계 보기 기능 호출
-                showYearlySalesStatistics(shopId); // shopId는 선택된 가맹점 ID
+        viewStatisticsButton.addActionListener(e -> showYearlySalesStatistics(shopId));
+    }
+
+    private void searchPhoneOfShop(int shopId, JTextField searchField, DefaultTableModel tableModel) {
+        String searchText = searchField.getText().toLowerCase();
+
+        List<ShopPhoneDTO> filtered = shopPhoneRepository.findByShopIdAndSearchText(shopId, searchText);
+        tableModel.setRowCount(0);
+        for (ShopPhoneDTO shopPhone : filtered) {
+            Object[] row = {shopPhone.getModelName(), shopPhone.getBrand(), shopPhone.getPrice(), shopPhone.getStock()};
+            tableModel.addRow(row);
+        }
+    }
+
+    private void sellPhoneToCustomer(int shopId, JTable phoneTable, JFrame phoneFrame, DefaultTableModel tableModel) {
+        int selectedRow = phoneTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(phoneFrame, "판매할 휴대폰을 선택하세요.");
+            return;
+        }
+
+        // 선택된 행에서 휴대폰 정보 가져오기
+        String modelName = tableModel.getValueAt(selectedRow, 0).toString();
+        int price = Integer.parseInt(tableModel.getValueAt(selectedRow, 2).toString());
+        int stock = Integer.parseInt(tableModel.getValueAt(selectedRow, 3).toString());
+
+        // 판매 수량 입력
+        String quantityStr = JOptionPane.showInputDialog(phoneFrame, "판매할 수량을 입력하세요:");
+        if (quantityStr == null || quantityStr.trim().isEmpty()) return;
+
+        try {
+            int quantity = Integer.parseInt(quantityStr);
+            if (quantity <= 0 || quantity > stock) {
+                JOptionPane.showMessageDialog(phoneFrame, "유효한 수량을 입력하세요. (남은 재고: " + stock + ")");
+                return;
             }
-        });
+
+            // 고객 ID 입력 받기
+            // 고객 정보 입력 받기
+            String customerName = JOptionPane.showInputDialog(phoneFrame, "고객 이름을 입력하세요:");
+            if (customerName == null || customerName.trim().isEmpty()) return;
+
+            String customerPhone = JOptionPane.showInputDialog(phoneFrame, "고객 전화번호를 입력하세요:");
+            if (customerPhone == null || customerPhone.trim().isEmpty()) return;
+
+            Customer existingCustomer = customerRepository.findCustomerByNameAndPhone(customerName, customerPhone);
+            if (existingCustomer == null) {
+                int response = JOptionPane.showConfirmDialog(
+                        phoneFrame,
+                        "고객 정보가 없습니다. 새로 추가하시겠습니까?",
+                        "고객 추가 확인",
+                        JOptionPane.YES_NO_OPTION
+                );
+
+                if (response == JOptionPane.YES_OPTION) {
+                    // 새로운 고객 생성 및 저장
+                    existingCustomer = new Customer(customerPhone, customerName);
+                    customerRepository.save(existingCustomer);
+
+                    // 저장 확인 (다시 조회)
+                    existingCustomer = customerRepository.findCustomerByNameAndPhone(customerName, customerPhone);
+                    if (existingCustomer == null) {
+                        JOptionPane.showMessageDialog(phoneFrame, "고객 정보 저장 실패");
+                        return;
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(phoneFrame, "판매를 취소합니다.");
+                    return;
+                }
+            }
+            Phone phone = phoneRepository.findByModelName(modelName);
+            if (phone == null) {
+                JOptionPane.showMessageDialog(phoneFrame, "휴대폰 정보를 찾을 수 없습니다.");
+                return;
+            }
+
+            LocalDateTime saleDate = LocalDateTime.now();
+            // 총 가격 계산
+            int totalPrice = price * quantity;
+
+            // 판매 기록 저장
+            Sale sale = new Sale(existingCustomer.getCustomerId(), phone.getPhoneId(), quantity, saleDate, shopId, totalPrice);
+            saleRepository.saveSale(sale);
+            shopPhoneRepository.decreaseStock(shopId, phone.getPhoneId(), quantity);
+            JOptionPane.showMessageDialog(phoneFrame, "판매 완료");
+
+            // UI 갱신 (재고 감소 반영)
+            tableModel.setValueAt(stock - quantity, selectedRow, 3);
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(phoneFrame, "올바른 숫자를 입력하세요.");
+        }
+    }
+
+    private void editPhoneStock(int shopId, JTable phoneTable, JFrame phoneFrame, DefaultTableModel tableModel) {
+        int selectedRow = phoneTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(phoneFrame, "수정할 휴대폰을 선택하세요.");
+            return;
+        }
+
+        // 선택된 행에서 휴대폰 정보 가져오기
+        String modelName = tableModel.getValueAt(selectedRow, 0).toString();
+        int phoneId = phoneRepository.findByModelName(modelName).getPhoneId(); // phoneId 가져오기
+        int stock = Integer.parseInt(tableModel.getValueAt(selectedRow, 3).toString());
+
+        // 수정할 재고 입력 받기
+        String newStockStr = JOptionPane.showInputDialog(phoneFrame, "수정할 재고를 입력하세요:", stock);
+
+        if (newStockStr == null) return;
+
+        try {
+            int newStock = Integer.parseInt(newStockStr);
+
+            // 재고 업데이트
+            shopPhoneRepository.updateStock(shopId, phoneId, newStock);  // phoneId를 사용하여 재고만 업데이트
+            tableModel.setValueAt(newStock, selectedRow, 3); // 테이블에서 재고 업데이트
+
+            JOptionPane.showMessageDialog(phoneFrame, "수정 완료");
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(phoneFrame, "올바른 숫자를 입력하세요.");
+        }
     }
 
     // 선택된 가맹점에서 판매 통계 버튼 클릭 시 호출되는 메서드
@@ -347,7 +352,6 @@ public class ShopManagementUI extends JFrame {
         statisticsFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         statisticsFrame.setVisible(true);
     }
-
     // 선택된 연도에 대한 매출 통계 차트를 월별로 보여주는 메서드
     private void showYearSalesChart(int shopId, int year) {
         List<Sale> sales = saleRepository.findSalesByShopIdAndYear(shopId, year);
@@ -496,25 +500,7 @@ public class ShopManagementUI extends JFrame {
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
 
         // 버튼 이벤트 처리
-        searchButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String searchText = searchField.getText().toLowerCase();
-
-                // 기존 테이블 데이터를 지운 후, 검색 조건에 맞는 판매 내역만 다시 추가
-                tableModel.setRowCount(0);
-                for (Sale sale : sales) {
-                    Customer customer = customerRepository.findById(sale.getCustomerId());
-                    Phone phone = phoneRepository.findById(sale.getPhoneId());
-                    if (customer != null && phone != null &&
-                            (customer.getName().toLowerCase().contains(searchText) ||
-                                    phone.getModelName().toLowerCase().contains(searchText))) {
-                        Object[] row = {customer.getName(), phone.getModelName(), sale.getQuantity(), sale.getTotalPrice(), sale.getSaleDate()};
-                        tableModel.addRow(row);
-                    }
-                }
-            }
-        });
+        searchButton.addActionListener(e -> searchSellHistory(shopId, searchField, tableModel));
 
         for (Sale sale : sales) {
             // 판매 내역에 포함된 고객 정보와 전화번호를 찾음
@@ -551,5 +537,17 @@ public class ShopManagementUI extends JFrame {
         salesFrame.setLocationRelativeTo(null);
         salesFrame.getContentPane().add(panel);
         salesFrame.setVisible(true);
+    }
+
+    private void searchSellHistory(int shopId, JTextField searchField, DefaultTableModel tableModel) {
+        String searchText = searchField.getText().toLowerCase();
+
+        List<SaleDTO> filteredSales = saleRepository.findSalesByShopIdAndSearchText(shopId, searchText);
+        // 기존 테이블 데이터를 지운 후, 검색 조건에 맞는 판매 내역만 다시 추가
+        tableModel.setRowCount(0);
+        for (SaleDTO sale : filteredSales) {
+            Object[] row = {sale.getCustomerName(), sale.getModelName(), sale.getQuantity(), sale.getTotalPrice(), sale.getSaleDate()};
+            tableModel.addRow(row);
+        }
     }
 }

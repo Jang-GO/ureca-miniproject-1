@@ -1,4 +1,4 @@
-package domain;
+package domain.dto;
 
 public class ShopPhoneDTO {
     private String modelName;
