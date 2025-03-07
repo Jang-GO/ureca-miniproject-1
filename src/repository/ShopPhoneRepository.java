@@ -1,7 +1,9 @@
 package repository;
 
 import connection.DBConnectionUtil;
+import domain.Phone;
 import domain.ShopPhone;
+import domain.ShopPhoneDTO;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -76,18 +78,35 @@ public class ShopPhoneRepository {
         }
     }
 
-    // ShopPhoneRepository 클래스 내에 추가된 메서드
-    public void deletePhoneFromShop(int shopId, int phoneId) {
-        String query = "DELETE FROM shop_phone WHERE shop_id = ? AND phone_id = ?";
+    public List<ShopPhoneDTO> findByShopIdAndSearchText(int shopId, String searchText) {
+        List<ShopPhoneDTO> phones = new ArrayList<>();
 
-        try (Connection connection = DBConnectionUtil.getConnection()) {
-            PreparedStatement stmt = connection.prepareStatement(query);
-            stmt.setInt(1, shopId);
-            stmt.setInt(2, phoneId);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
+        String sql = "SELECT p.model_name, p.brand, p.price, sp.stock " +
+                "FROM shop_phone sp " +
+                "JOIN phone p ON sp.phone_id = p.id " +
+                "WHERE sp.shop_id = ? " +
+                "AND (LOWER(p.model_name) LIKE LOWER(?) OR LOWER(p.brand) LIKE LOWER(?))";
+
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, shopId);
+            pstmt.setString(2, "%" + searchText + "%");
+            pstmt.setString(3, "%" + searchText + "%");
+
+            try(ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    phones.add(new ShopPhoneDTO(
+                            rs.getString("model_name"),
+                            rs.getString("brand"),
+                            rs.getInt("price"),
+                            rs.getInt("stock")
+                    ));
+                }
+            }
+        }catch(SQLException e){
             e.printStackTrace();
-            throw new RuntimeException("가맹점에서 휴대폰 삭제 실패");
         }
+
+        return phones;
     }
 }

@@ -3,9 +3,11 @@ package repository;
 import connection.DBConnectionUtil;
 import domain.Phone;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 public class PhoneRepository {
     // 휴대폰 ID로 휴대폰 정보 조회
@@ -22,7 +24,7 @@ public class PhoneRepository {
                 // LocalDate로 변환
                 LocalDate createdAt = rs.getDate("created_at").toLocalDate();
 
-                return new Phone(brand, createdAt,modelName, phoneId, price);
+                return new Phone(brand, createdAt, modelName, phoneId, price);
             }
         } catch (SQLException e) {
             e.printStackTrace();

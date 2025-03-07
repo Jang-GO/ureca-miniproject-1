@@ -20,20 +20,22 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 
 public class ShopManagementUI extends JFrame {
     private final JList<String> shopList;
     private final DefaultListModel<String> listModel;
 
-    private final ShopRepository shopRepository;
-    private final ShopPhoneRepository shopPhoneRepository;
-    private final PhoneRepository phoneRepository;
-    private final SaleRepository saleRepository;
-    private final CustomerRepository customerRepository;
-    private final OwnerRepository ownerRepository;
+    private final ShopRepository shopRepository = new ShopRepository();
+    private final ShopPhoneRepository shopPhoneRepository = new ShopPhoneRepository();
+    private final PhoneRepository phoneRepository = new PhoneRepository();
+    private final SaleRepository saleRepository = new SaleRepository();
+    private final CustomerRepository customerRepository = new CustomerRepository();
+    private final OwnerRepository ownerRepository = new OwnerRepository();
 
     private UUID ownerId; // 점주 UUID 저장
     private JLabel ownerNameLabel;  // 추가된 JLabel
@@ -43,13 +45,6 @@ public class ShopManagementUI extends JFrame {
         setSize(600, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-
-        shopRepository = new ShopRepository();
-        shopPhoneRepository = new ShopPhoneRepository();
-        phoneRepository = new PhoneRepository();
-        saleRepository = new SaleRepository();
-        customerRepository = new CustomerRepository();
-        ownerRepository = new OwnerRepository();
 
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
@@ -83,22 +78,25 @@ public class ShopManagementUI extends JFrame {
         setVisible(true);
     }
 
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() ->
+                new ShopManagementUI().setVisible(true));
+    }
+
     private void requestOwnerId() {
         while (true) {
             String ownerIdText = JOptionPane.showInputDialog(this, "점주 UUID를 입력하세요:", "로그인", JOptionPane.QUESTION_MESSAGE);
-            if (ownerIdText == null) {
-                System.exit(0); // 사용자가 취소하면 프로그램 종료
-            }
+            if (ownerIdText == null) System.exit(0); // 사용자가 취소하면 프로그램 종료
+
             try {
                 ownerId = UUID.fromString(ownerIdText); // UUID 유효성 검사
                 Owner owner = ownerRepository.findByUUID(ownerId);
-                if (owner == null) {
-                    JOptionPane.showMessageDialog(this, "등록되지 않은 사용자입니다", "등록되지 않은 사용자", JOptionPane.ERROR_MESSAGE);
-                } else {
+                if (owner != null) {
                     ownerNameLabel.setText(owner.getName() + " 님이 운영중인 가맹점 목록"); // 로그인한 점주의 이름과 메시지 표시
                     searchShops(owner); // 가맹점 목록 자동 검색
-                    break;
+                    return;
                 }
+                JOptionPane.showMessageDialog(this, "등록되지 않은 사용자입니다", "등록되지 않은 사용자", JOptionPane.ERROR_MESSAGE);
             } catch (IllegalArgumentException ex) {
                 JOptionPane.showMessageDialog(this, "유효한 UUID를 입력해주세요.", "오류", JOptionPane.ERROR_MESSAGE);
             }
@@ -106,25 +104,16 @@ public class ShopManagementUI extends JFrame {
     }
 
     private void searchShops(Owner owner) {
-        try{
+        try {
             int ownerId = owner.getOwnerId();
             List<Shop> shops = shopRepository.findByOwnerId(ownerId);
             listModel.clear();
             for (Shop shop : shops) {
                 listModel.addElement(shop.getShopName() + " (ID: " + shop.getShopId() + ")");
             }
-        }catch (NumberFormatException ex) {
+        } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(ShopManagementUI.this, "에러발생");
         }
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new ShopManagementUI().setVisible(true);
-            }
-        });
     }
 
     // 선택된 가맹점에서 판매 중인 휴대폰을 보여주는 화면
@@ -159,15 +148,11 @@ public class ShopManagementUI extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 String searchText = searchField.getText().toLowerCase();
 
-                // 기존 테이블 데이터를 지운 후, 검색 조건에 맞는 휴대폰만 다시 추가
+                List<ShopPhoneDTO> filtered = shopPhoneRepository.findByShopIdAndSearchText(shopId, searchText);
                 tableModel.setRowCount(0);
-                for (ShopPhone shopPhone : shopPhones) {
-                    Phone phone = phoneRepository.findById(shopPhone.getPhoneId());
-                    if (phone != null && (phone.getModelName().toLowerCase().contains(searchText) ||
-                            phone.getBrand().toLowerCase().contains(searchText))) {
-                        Object[] row = {phone.getModelName(), phone.getBrand(), phone.getPrice(), shopPhone.getStock()};
-                        tableModel.addRow(row);
-                    }
+                for (ShopPhoneDTO shopPhone : filtered) {
+                    Object[] row = {shopPhone.getModelName(), shopPhone.getBrand(), shopPhone.getPrice(), shopPhone.getStock()};
+                    tableModel.addRow(row);
                 }
             }
         });
@@ -205,13 +190,8 @@ public class ShopManagementUI extends JFrame {
 
 
         // 버튼 이벤트 처리
-        viewSalesButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // 판매 내역 보기 기능 호출
-                showSalesHistory(shopId); // shopId는 선택된 가맹점 ID
-            }
-        });
+        viewSalesButton.addActionListener(e -> showSalesHistory(shopId));
+
         editButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
