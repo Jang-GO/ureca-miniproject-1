@@ -1,5 +1,6 @@
 package ui;
 
+import com.formdev.flatlaf.intellijthemes.FlatDarkFlatIJTheme;
 import domain.*;
 import domain.dto.SaleDTO;
 import domain.dto.ShopPhoneDTO;
@@ -17,8 +18,6 @@ import repository.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDateTime;
@@ -81,6 +80,8 @@ public class ShopManagementUI extends JFrame {
     }
 
     public static void main(String[] args) {
+        FlatDarkFlatIJTheme.setup();
+
         SwingUtilities.invokeLater(() ->
                 new ShopManagementUI().setVisible(true));
     }
