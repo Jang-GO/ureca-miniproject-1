@@ -108,4 +108,24 @@ public class ShopPhoneRepository {
 
         return phones;
     }
+
+    public void deleteByShopIdAndPhoneId(int shopId, int phoneId){
+        String query = "DELETE FROM shop_phone WHERE shop_id = ? AND phone_id = ?";
+
+        try (Connection con = DBConnectionUtil.getConnection();
+             PreparedStatement pstmt = con.prepareStatement(query)) {
+
+            pstmt.setInt(1, shopId);
+            pstmt.setInt(2, phoneId);
+
+            int rowsAffected = pstmt.executeUpdate();
+
+            if (rowsAffected == 0) {
+                throw new SQLException("삭제할 레코드가 없습니다. 해당 가맹점과 휴대폰이 일치하지 않습니다.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("레코드 삭제 실패", e);
+        }
+    }
 }

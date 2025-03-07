@@ -163,11 +163,13 @@ public class ShopManagementUI extends JFrame {
         JButton editButton = new JButton("재고 수정");
         JButton viewStatisticsButton = new JButton("판매 통계 보기");
         JButton viewSalesButton = new JButton("판매 내역 보기");
+        JButton deleteButton = new JButton("삭제");
 
         buttonPanel.add(sellButton);
         buttonPanel.add(editButton);
         buttonPanel.add(viewStatisticsButton);
         buttonPanel.add(viewSalesButton);
+        buttonPanel.add(deleteButton);  // 삭제 버튼 추가
 
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
@@ -188,6 +190,7 @@ public class ShopManagementUI extends JFrame {
         sellButton.addActionListener( e -> sellPhoneToCustomer(shopId, phoneTable, phoneFrame, tableModel));
         // 판매 통계 보기 버튼 클릭 이벤트 처리
         viewStatisticsButton.addActionListener(e -> showYearlySalesStatistics(shopId));
+        deleteButton.addActionListener(e -> deletePhoneFromShop(shopId, phoneTable, tableModel));
     }
 
     private void searchPhoneOfShop(int shopId, JTextField searchField, DefaultTableModel tableModel) {
@@ -309,6 +312,34 @@ public class ShopManagementUI extends JFrame {
 
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(phoneFrame, "올바른 숫자를 입력하세요.");
+        }
+    }
+
+    private void deletePhoneFromShop(int shopId, JTable phoneTable, DefaultTableModel tableModel) {
+        int selectedRow = phoneTable.getSelectedRow();
+        if (selectedRow != -1) {
+            String modelName = (String) tableModel.getValueAt(selectedRow, 0);
+            int phoneId = phoneRepository.findByModelName(modelName).getPhoneId();
+
+            // 삭제 확인 메시지 표시
+            int confirm = JOptionPane.showConfirmDialog(
+                    null,
+                    "정말로 [" + modelName + "] 모델을 삭제하시겠습니까?",
+                    "삭제 확인",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                try {
+                    shopPhoneRepository.deleteByShopIdAndPhoneId(shopId, phoneId);  // 삭제 작업
+                    tableModel.removeRow(selectedRow);  // 테이블에서 삭제된 행을 제거
+                    JOptionPane.showMessageDialog(null, "휴대폰이 성공적으로 삭제되었습니다.");
+                } catch (RuntimeException e) {
+                    JOptionPane.showMessageDialog(null, "삭제에 실패했습니다: " + e.getMessage());
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "삭제할 휴대폰을 선택해주세요.");
         }
     }
 
