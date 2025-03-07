@@ -90,7 +90,7 @@ public class SaleRepository {
     public List<SaleDTO> findSalesByShopIdAndSearchText(int shopId, String searchText) {
         List<SaleDTO> sales = new ArrayList<>();
 
-        String sql = "SELECT c.name, p.model_name, s.quantity, s.total_price, s.sale_date " +
+        String sql = "SELECT c.name,c.phone_number, p.model_name, s.quantity, s.total_price, s.sale_date " +
                 "FROM sale s " +
                 "JOIN customer c ON s.customer_id = c.customer_id " +
                 "JOIN phone p ON s.phone_id = p.phone_id " +
@@ -108,10 +108,11 @@ public class SaleRepository {
                 while (rs.next()) {
                     sales.add(new SaleDTO(
                             rs.getString("name"),
+                            rs.getString("phone_number"),
                             rs.getString("model_name"),
                             rs.getInt("quantity"),
-                            rs.getInt("total_price"),
-                            rs.getTimestamp("sale_date").toLocalDateTime()
+                            rs.getTimestamp("sale_date").toLocalDateTime(),
+                            rs.getInt("total_price")
                     ));
                 }
             }

@@ -67,8 +67,9 @@ public class ShopManagementUI extends JFrame {
                 if (e.getClickCount() == 2) {
                     String selectedShop = shopList.getSelectedValue();
                     if (selectedShop != null) {
-                        int shopId = Integer.parseInt(selectedShop.split("ID: ")[1].replace(")", ""));
-                        showPhonesOfShop(shopId);
+                        String[] split = selectedShop.split("\\(ID: ");
+                        int shopId = Integer.parseInt(split[1].replace(")", ""));
+                        showPhonesOfShop(shopId, split[0]);
                     }
                 }
             }
@@ -120,7 +121,7 @@ public class ShopManagementUI extends JFrame {
     }
 
     // 선택된 가맹점에서 판매 중인 휴대폰을 보여주는 화면
-    private void showPhonesOfShop(int shopId) {
+    private void showPhonesOfShop(int shopId, String shopName) {
         List<ShopPhone> shopPhones = shopPhoneRepository.findPhonesByShopId(shopId);
 
         // 검색 필드를 추가합니다.
@@ -174,7 +175,7 @@ public class ShopManagementUI extends JFrame {
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
         // 창 설정
-        JFrame phoneFrame = new JFrame("가맹점 판매 중인 휴대폰");
+        JFrame phoneFrame = new JFrame(shopName + "에서 판매 중인 휴대폰");
         phoneFrame.setSize(600, 400);
         phoneFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         phoneFrame.setLocationRelativeTo(null);
@@ -528,7 +529,7 @@ public class ShopManagementUI extends JFrame {
         searchPanel.add(searchButton);
 
         // 테이블에 표시할 데이터 준비
-        String[] columnNames = {"고객 이름", "모델", "수량", "총 가격", "판매일"};
+        String[] columnNames = {"고객 이름","연락처", "모델", "수량", "총 가격", "판매일"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
 
         // 버튼 이벤트 처리
@@ -542,6 +543,7 @@ public class ShopManagementUI extends JFrame {
             if (customer != null && phone != null) {
                 Object[] row = {
                         customer.getName(),
+                        customer.getPhoneNumber(),
                         phone.getModelName(),
                         sale.getQuantity(),
                         sale.getTotalPrice(),
@@ -578,7 +580,7 @@ public class ShopManagementUI extends JFrame {
         // 기존 테이블 데이터를 지운 후, 검색 조건에 맞는 판매 내역만 다시 추가
         tableModel.setRowCount(0);
         for (SaleDTO sale : filteredSales) {
-            Object[] row = {sale.getCustomerName(), sale.getModelName(), sale.getQuantity(), sale.getTotalPrice(), sale.getSaleDate()};
+            Object[] row = {sale.getCustomerName(),sale.getCustomerPhoneNumber() ,sale.getModelName(), sale.getQuantity(), sale.getTotalPrice(), sale.getSaleDate()};
             tableModel.addRow(row);
         }
     }
