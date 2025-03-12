@@ -5,35 +5,35 @@ import java.util.UUID;
 public class Owner {
     private int ownerId;
     private String name;
-    private String phone_number;
+    private String phoneNumber;
 
     @Override
     public String toString() {
         return "Owner{" +
                 "name='" + name + '\'' +
                 ", ownerId=" + ownerId +
-                ", phone_number='" + phone_number + '\'' +
-                ", uuid=" + uuid +
+                ", phone_number='" + phoneNumber + '\'' +
+                ", uuid=" + ownerUuid +
                 '}';
     }
 
-    private UUID uuid;
+    private UUID ownerUuid;
 
     public Owner() {
     }
 
-    public UUID getUuid() {
-        return uuid;
+    public UUID getOwnerUuid() {
+        return ownerUuid;
     }
 
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
+    public void setOwnerUuid(UUID ownerUuid) {
+        this.ownerUuid = ownerUuid;
     }
 
-    public Owner(String name, int ownerId, String phone_number) {
+    public Owner(String name, int ownerId, String phoneNumber) {
         this.name = name;
         this.ownerId = ownerId;
-        this.phone_number = phone_number;
+        this.phoneNumber = phoneNumber;
     }
 
     public String getName() {
@@ -52,11 +52,11 @@ public class Owner {
         this.ownerId = ownerId;
     }
 
-    public String getPhone_number() {
-        return phone_number;
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
-    public void setPhone_number(String phone_number) {
-        this.phone_number = phone_number;
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }

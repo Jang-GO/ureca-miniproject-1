@@ -1,9 +1,12 @@
 package ui;
 
 import com.formdev.flatlaf.intellijthemes.FlatDarkFlatIJTheme;
+import connection.MyBatisConfig;
 import domain.*;
 import domain.dto.SaleDTO;
 import domain.dto.ShopPhoneDTO;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -13,7 +16,7 @@ import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
-import repository.*;
+import repository.mybatis.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -31,18 +34,29 @@ public class ShopManagementUI extends JFrame {
     private final JList<String> shopList;
     private final DefaultListModel<String> listModel;
 
-    private final ShopRepository shopRepository = new ShopRepository();
-    private final ShopPhoneRepository shopPhoneRepository = new ShopPhoneRepository();
-    private final PhoneRepository phoneRepository = new PhoneRepository();
-    private final SaleRepository saleRepository = new SaleRepository();
-    private final CustomerRepository customerRepository = new CustomerRepository();
-    private final OwnerRepository ownerRepository = new OwnerRepository();
-    private final CommonCodeRepository commonCodeRepository = new CommonCodeRepository();
+    private final MBShopRepository shopRepository;
+    private final MBShopPhoneRepository shopPhoneRepository;
+    private final MBPhoneRepository phoneRepository;
+    private final MBSaleRepository saleRepository;
+    private final MBCustomerRepository customerRepository;
+    private final MBOwnerRepository ownerRepository;
+    private final MBCommonCodeRepository commonCodeRepository;
 
     private UUID ownerId; // 점주 UUID 저장
     private JLabel ownerNameLabel;  // 추가된 JLabel
+    private SqlSession session;  // SqlSession 객체를 클래스 필드로 유지
 
     public ShopManagementUI() {
+        SqlSessionFactory sqlSessionFactory = new MyBatisConfig().getSqlSessionFactory();
+        session = sqlSessionFactory.openSession();
+        shopRepository = session.getMapper(MBShopRepository.class);
+        shopPhoneRepository = session.getMapper(MBShopPhoneRepository.class);
+        phoneRepository = session.getMapper(MBPhoneRepository.class);
+        saleRepository = session.getMapper(MBSaleRepository.class);
+        customerRepository = session.getMapper(MBCustomerRepository.class);
+        ownerRepository = session.getMapper(MBOwnerRepository.class);
+        commonCodeRepository = session.getMapper(MBCommonCodeRepository.class);
+
         setTitle("휴대폰 판매 관리 시스템");
         setSize(600, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -94,8 +108,9 @@ public class ShopManagementUI extends JFrame {
             if (ownerIdText == null) System.exit(0); // 사용자가 취소하면 프로그램 종료
 
             try {
-                ownerId = UUID.fromString(ownerIdText); // UUID 유효성 검사
-                Owner owner = ownerRepository.findByUUID(ownerId);
+//                ownerId = UUID.fromString(ownerIdText); // UUID 유효성 검사
+                Owner owner = ownerRepository.findByUUID(ownerIdText);
+                System.out.println("owner = " + owner);
                 if (owner != null) {
                     ownerNameLabel.setText(owner.getName() + " 님이 운영중인 가맹점 목록"); // 로그인한 점주의 이름과 메시지 표시
                     searchShops(owner); // 가맹점 목록 자동 검색
@@ -114,7 +129,7 @@ public class ShopManagementUI extends JFrame {
             List<Shop> shops = shopRepository.findByOwnerId(ownerId);
             listModel.clear();
             for (Shop shop : shops) {
-                listModel.addElement(shop.getShopName() + " (ID: " + shop.getShopId() + ")");
+                listModel.addElement(shop.getName() + " (ID: " + shop.getShopId() + ")");
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(ShopManagementUI.this, "에러발생");

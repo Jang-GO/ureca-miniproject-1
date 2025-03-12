@@ -25,7 +25,7 @@ public class ShopRepository {
             while (rs.next()) {
                 Shop shop = new Shop();
                 shop.setShopId(rs.getInt("shop_id"));
-                shop.setShopName(rs.getString("name"));
+                shop.setName(rs.getString("name"));
                 shop.setLocation(rs.getString("location_name"));
                 shop.setOwnerId(rs.getInt("owner_id"));
                 // LocalDate로 변환

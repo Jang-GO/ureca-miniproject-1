@@ -26,8 +26,8 @@ public class OwnerRepository {
 
                     owner.setOwnerId(resultSet.getInt("owner_id"));
                     owner.setName(resultSet.getString("name"));
-                    owner.setPhone_number(resultSet.getString("phone_number"));
-                    owner.setUuid(UUID.fromString(resultSet.getString("owner_uuid")));
+                    owner.setPhoneNumber(resultSet.getString("phone_number"));
+                    owner.setOwnerUuid(UUID.fromString(resultSet.getString("owner_uuid")));
 
                     return owner;
                 } else {
