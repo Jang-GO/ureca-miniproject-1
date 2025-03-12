@@ -37,6 +37,7 @@ public class ShopManagementUI extends JFrame {
     private final SaleRepository saleRepository = new SaleRepository();
     private final CustomerRepository customerRepository = new CustomerRepository();
     private final OwnerRepository ownerRepository = new OwnerRepository();
+    private final CommonCodeRepository commonCodeRepository = new CommonCodeRepository();
 
     private UUID ownerId; // 점주 UUID 저장
     private JLabel ownerNameLabel;  // 추가된 JLabel
@@ -129,9 +130,17 @@ public class ShopManagementUI extends JFrame {
         JTextField searchField = new JTextField(15);
         JButton searchButton = new JButton("검색");
 
+        JComboBox<String> brandComboBox = new JComboBox<>();
+        // 🔹 브랜드 목록 불러오기 (Common Code 활용)
+        List<String> brands = commonCodeRepository.findBrandNames();
+        for (String brand : brands) {
+            brandComboBox.addItem(brand);
+        }
         searchPanel.add(new JLabel("모델명 또는 브랜드:"));
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
+        searchPanel.add(new JLabel("브랜드:"));
+        searchPanel.add(brandComboBox); // 브랜드 콤보박스 추가
 
         // 테이블에 표시할 데이터 준비
         String[] columnNames = {"모델", "브랜드", "가격", "재고"};

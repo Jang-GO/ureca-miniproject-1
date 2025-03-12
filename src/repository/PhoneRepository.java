@@ -12,14 +12,19 @@ import java.time.LocalDate;
 public class PhoneRepository {
     // 휴대폰 ID로 휴대폰 정보 조회
     public Phone findById(int phoneId) {
-        String query = "SELECT * FROM phone WHERE phone_id = ?";
+        String query = """
+            SELECT p.phone_id, p.model_name, c.code_name AS brand_name, p.price, p.created_at 
+            FROM phone p
+            JOIN common_code c ON p.brand_code = c.code_id
+            WHERE p.phone_id = ?;
+        """;;
         try (Connection con = DBConnectionUtil.getConnection();
              PreparedStatement psmt = con.prepareStatement(query)) {
             psmt.setInt(1, phoneId);
             ResultSet rs = psmt.executeQuery();
             if (rs.next()) {
                 String modelName = rs.getString("model_name");
-                String brand = rs.getString("brand");
+                String brand = rs.getString("brand_name");
                 int price = rs.getInt("price");
                 // LocalDate로 변환
                 LocalDate createdAt = rs.getDate("created_at").toLocalDate();
@@ -34,7 +39,12 @@ public class PhoneRepository {
 
     public Phone findByModelName(String modelName) {
         Phone phone = null;
-        String sql = "SELECT * FROM phone WHERE model_name = ?";
+        String sql = """
+            SELECT p.phone_id, p.model_name, c.code_name AS brand_name, p.price, p.created_at 
+            FROM phone p
+            JOIN common_code c ON p.brand_code = c.code_id
+            WHERE p.model_name = ?;
+        """;
 
         try (Connection connection = DBConnectionUtil.getConnection();
              PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -48,7 +58,7 @@ public class PhoneRepository {
                 phone = new Phone();
                 phone.setPhoneId(rs.getInt("phone_id"));
                 phone.setModelName(rs.getString("model_name"));
-                phone.setBrand(rs.getString("brand"));
+                phone.setBrand(rs.getString("brand_name"));
                 phone.setPrice(rs.getInt("price"));
                 phone.setCreatedAt(rs.getDate("created_at").toLocalDate());
             }
