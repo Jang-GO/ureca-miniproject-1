@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mappers>
+    <mapper class = "repository.mybatis.MBShopRepository"></mapper>
+    <mapper class = "repository.mybatis.MBShopPhoneRepository"></mapper>
+    <mapper class = "repository.mybatis.MBCommonCodeRepository"></mapper>
+    <mapper class = "repository.mybatis.MBCustomerRepository"></mapper>
+    <mapper class = "repository.mybatis.MBOwnerRepository"></mapper>
+    <mapper class = "repository.mybatis.MBPhoneRepository"></mapper>
+    <mapper class = "repository.mybatis.MBSaleRepository"></mapper>
+</mappers>

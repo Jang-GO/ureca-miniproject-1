@@ -8,8 +8,8 @@ public class Sale {
     private int totalPrice;
     private LocalDateTime saleDate;
     private int customerId;
-    private int ShopId;
-    private int PhoneId;
+    private int shopId;
+    private int phoneId;
 
 
     public Sale() {
@@ -17,10 +17,10 @@ public class Sale {
 
     public Sale(int customerId, int phoneId, int quantity, LocalDateTime saleDate, int shopId, int totalPrice) {
         this.customerId = customerId;
-        PhoneId = phoneId;
+        this.phoneId = phoneId;
         this.quantity = quantity;
         this.saleDate = saleDate;
-        ShopId = shopId;
+        this.shopId = shopId;
         this.totalPrice = totalPrice;
     }
 
@@ -33,11 +33,11 @@ public class Sale {
     }
 
     public int getPhoneId() {
-        return PhoneId;
+        return phoneId;
     }
 
     public void setPhoneId(int phoneId) {
-        PhoneId = phoneId;
+        this.phoneId = phoneId;
     }
 
     public int getQuantity() {
@@ -65,11 +65,11 @@ public class Sale {
     }
 
     public int getShopId() {
-        return ShopId;
+        return shopId;
     }
 
     public void setShopId(int shopId) {
-        ShopId = shopId;
+        this.shopId = shopId;
     }
 
     public int getTotalPrice() {
