@@ -1,9 +1,7 @@
 package repository.mybatis;
 
 import domain.Owner;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 
 import java.util.UUID;
 
@@ -11,5 +9,5 @@ import java.util.UUID;
 public interface MBOwnerRepository {
 
     @Select("SELECT * FROM owner WHERE owner_uuid = #{ownerUuid}")
-    Owner findByUUID(@Param("ownerUuid") UUID ownerUuid);
+    Owner findByUUID(@Param("ownerUuid") String ownerUuid);
 }

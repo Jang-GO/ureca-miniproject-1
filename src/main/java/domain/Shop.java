@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 public class Shop {
     private int shopId;
-    private String shopName;
+    private String name;
     private String location;
     private LocalDate createdAt;
     private int ownerId;
@@ -12,12 +12,12 @@ public class Shop {
     public Shop() {
     }
 
-    public Shop(LocalDate createdAt, String location, int ownerId, int shopId, String shopName) {
+    public Shop(LocalDate createdAt, String location, int ownerId, int shopId, String name) {
         this.createdAt = createdAt;
         this.location = location;
         this.ownerId = ownerId;
         this.shopId = shopId;
-        this.shopName = shopName;
+        this.name = name;
     }
 
     public LocalDate getCreatedAt() {
@@ -52,11 +52,11 @@ public class Shop {
         this.shopId = shopId;
     }
 
-    public String getShopName() {
-        return shopName;
+    public String getName() {
+        return name;
     }
 
-    public void setShopName(String shopName) {
-        this.shopName = shopName;
+    public void setName(String name) {
+        this.name = name;
     }
 }

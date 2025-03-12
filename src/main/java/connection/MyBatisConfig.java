@@ -1,6 +1,7 @@
 package connection;
 
 import org.apache.ibatis.datasource.pooled.PooledDataSource;
+import org.apache.ibatis.logging.stdout.StdOutImpl;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
@@ -17,6 +18,9 @@ public class MyBatisConfig {
         Configuration configuration = new Configuration();
         configuration.setEnvironment(new org.apache.ibatis.mapping.Environment("development",
                 new JdbcTransactionFactory(), dataSource));
+
+        configuration.setLogImpl(StdOutImpl.class);
+        configuration.setMapUnderscoreToCamelCase(true);
         // 매퍼 클래스 등록
         configuration.addMapper(repository.mybatis.MBShopRepository.class);
         configuration.addMapper(repository.mybatis.MBShopPhoneRepository.class);
