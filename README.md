@@ -1,4 +1,6 @@
-# <center>유레카 미니프로젝트</center>
+<div align="center">
+  <h1>유레카 미니프로젝트</h1>
+</div>
 
 ## 📋 목차
 
